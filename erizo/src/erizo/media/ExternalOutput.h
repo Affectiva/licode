@@ -89,6 +89,9 @@ private:
     // so the second scheme seems not applicable.  Too bad.
     vp8SearchState vp8SearchState_;
     bool needToSendFir_;
+    
+    long long lastPushedTimeStamp_;
+    static const int PLI_INTERVAL;
 
     bool initContext();
     int sendFirPacket();
