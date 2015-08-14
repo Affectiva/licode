@@ -7,9 +7,11 @@
 
 namespace erizo {
 
+const int ExternalOutput::PLI_INTERVAL = 5000;
+
 DEFINE_LOGGER(ExternalOutput, "media.ExternalOutput");
 ExternalOutput::ExternalOutput(const std::string& outputUrl) : fec_receiver_(this), audioQueue_(5.0, 10.0), videoQueue_(5.0, 10.0), inited_(false), video_stream_(NULL), audio_stream_(NULL),
-    firstVideoTimestamp_(-1), firstAudioTimestamp_(-1), firstDataReceived_(-1), videoOffsetMsec_(-1), audioOffsetMsec_(-1), vp8SearchState_(lookingForStart), needToSendFir_(true)
+    firstVideoTimestamp_(-1), firstAudioTimestamp_(-1), firstDataReceived_(-1), videoOffsetMsec_(-1), audioOffsetMsec_(-1), vp8SearchState_(lookingForStart), needToSendFir_(true), lastPushedTimeStamp_(0)
 {
     ELOG_DEBUG("Creating output to %s", outputUrl.c_str());
 
@@ -390,9 +392,29 @@ void ExternalOutput::queueData(char* buffer, int length, packetType type){
             ELOG_DEBUG("File %s, video offset msec: %llu", context_->filename, videoOffsetMsec_);
         }
 
+        RtpHeader* h = reinterpret_cast<RtpHeader*>(buffer);
+
+
+
+        if (firstVideoTimestamp_ != -1){ //If not first frame
+            //Calculate video timestamp
+            long long currentTimestamp = h->getTimestamp();
+            if (currentTimestamp - firstVideoTimestamp_ < 0) {
+                // we wrapped.  add 2^32 to correct this.  We only handle a single wrap around since that's ~13 hours of recording, minimum.
+                currentTimestamp += 0xFFFFFFFF;
+            }
+
+            long long videoTimeStamp = (currentTimestamp - firstVideoTimestamp_) / (90000 / video_stream_->time_base.den);
+            ELOG_DEBUG(" current=%d, last=%d, Delta timestamp=%d", videoTimeStamp, lastPushedTimeStamp_,(videoTimeStamp - lastPushedTimeStamp_));
+            if ((videoTimeStamp - lastPushedTimeStamp_ ) >= PLI_INTERVAL) {
+                this->sendFirPacket();
+                ELOG_DEBUG(" Sending Request for PLI");
+                lastPushedTimeStamp_ = videoTimeStamp;
+            }
+        }
+
         // If this is a red header, let's push it to our fec_receiver_, which will spit out frames in one of our other callbacks.
         // Otherwise, just stick it straight into the video queue.
-        RtpHeader* h = reinterpret_cast<RtpHeader*>(buffer);
         if (h->getPayloadType() == RED_90000_PT) {
             // The only things AddReceivedRedPacket uses are headerLength and sequenceNumber.  Unfortunately the amount of crap
             // we would have to pull in from the WebRtc project to fully construct a webrtc::RTPHeader object is obscene.  So
