@@ -43,6 +43,8 @@ check_proxy(){
 }
 
 install_apt_deps(){
+  # install x264 from atrpms
+  sudo yum -y --enablerepo=atrpms* install x264-devel
   # install epel which enables the repo that contains some of
   # the packages that we need
   sudo yum -y install epel-release
@@ -69,13 +71,6 @@ install_libnice(){
 
 install_mediadeps(){
   cd $LIB_DIR
-  curl -O http://ftp.videolan.org/pub/videolan/x264/snapshots/last_stable_x264.tar.bz2
-  tar -xf last_stable_x264.tar.bz2
-  cd x264-snapshot-*-stable
-  ./configure --prefix=$PREFIX_DIR --enable-pic --enable-shared --disable-lavf
-  make -s V=0
-  make install
-
   curl -O https://www.libav.org/releases/libav-11.1.tar.gz
   tar -xf libav-11.1.tar.gz
   cd libav-11.1
