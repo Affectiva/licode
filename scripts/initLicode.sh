@@ -22,6 +22,4 @@ cd $ROOT/erizo_controller
 ./initErizo_controller.sh
 ./initErizo_agent.sh
 
-cp $ROOT/erizo_controller/erizoClient/dist/erizo.js $EXTRAS/basic_example/public/
-
 echo [licode] Done, run basic_example/basicServer.js

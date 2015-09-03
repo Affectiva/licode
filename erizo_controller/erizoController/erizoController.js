@@ -95,6 +95,14 @@ var ecch = require('./ecch').Ecch({amqper: amqper});
 // Logger
 var log = logger.getLogger("ErizoController");
 
+// Set up a static server to serve erizo.js, etc, from the dist
+// directory
+var finalhandler = require('finalhandler')
+var serve = require('serve-static')('../erizoClient/dist')
+var dist = function(req, res) {
+  serve(req, res, finalhandler(req, res))
+}
+
 var server;
 
 if (GLOBAL.config.erizoController.listen_ssl) {
@@ -104,10 +112,10 @@ if (GLOBAL.config.erizoController.listen_ssl) {
         key: fs.readFileSync('../../cert/key.pem').toString(),
         cert: fs.readFileSync('../../cert/cert.pem').toString()
     };
-    server = https.createServer(options);
+    server = https.createServer(options, dist);
 } else {
     var http = require('http');
-    server = http.createServer();
+    server = http.createServer(dist);
 }
 
 server.listen(GLOBAL.config.erizoController.listen_port);
