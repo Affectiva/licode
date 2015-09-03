@@ -488,14 +488,6 @@ var listen = function () {
             log.info("erizoController.js: Stopping recording  " + recordingId + " url " + url);
             socket.room.controller.removeExternalOutput(url, callback);
 
-	    var sessionToken = recordingId;
-            log.info("erizoController.js: affdex.saveVideo " + recordingId);
-
-            affdex.saveVideo(sessionToken, url, function(err, data) {
-		log.info('saveVideo callback');
-		log.info(data);
-	    });
-
         });
 
         //Gets 'unpublish' messages on the socket in order to remove a stream from the room.
@@ -586,11 +578,24 @@ var listen = function () {
                         if( socket.room.streams[id]) {
                             if (socket.room.streams[id].hasAudio() || socket.room.streams[id].hasVideo() || socket.room.streams[id].hasScreen()) {
                                 if (!socket.room.p2p) {
-                                    socket.room.controller.removePublisher(id);
-                                    if (GLOBAL.config.erizoController.report.session_events) {
-                                        var timeStamp = new Date();
-                                        amqper.broadcast('event', {room: socket.room.id, user: socket.id, type: 'unpublish', stream: id, timestamp: timeStamp.getTime()});
-                                    }
+
+                                    var recordingId = socket.room.id;
+                                    var url = '/tmp/' + recordingId + '.mkv';
+
+                                    log.info("erizoController.js: affdex.saveVideo " + url);
+
+                                    affdex.saveVideo(recordingId, url, function(err, data) {
+
+                                        log.info('saveVideo callback');
+                                        log.info(data);
+
+                                        socket.room.controller.removePublisher(id);
+                                        if (GLOBAL.config.erizoController.report.session_events) {
+                                            var timeStamp = new Date();
+                                            amqper.broadcast('event', {room: socket.room.id, user: socket.id, type: 'unpublish', stream: id, timestamp: timeStamp.getTime()});
+                                        }
+                                    });
+
                                 }
                             }
 
