@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e # # exit if anything fails
 
 SCRIPT=`pwd`/$0
 FILENAME=`basename $SCRIPT`
