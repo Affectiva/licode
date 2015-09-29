@@ -145,3 +145,4 @@ class scoped_refptr {
 }  // namespace rtc
 
 #endif  // WEBRTC_BASE_SCOPED_REF_PTR_H_
+

@@ -88,12 +88,18 @@ void ExternalOutput::receiveRawData(RawDataPacket& /*packet*/){
     return;
 }
 // This is called by our fec_ object once it recovers a packet.
-bool ExternalOutput::OnRecoveredPacket(const uint8_t* rtp_packet, int rtp_packet_length) {
+bool ExternalOutput::OnRecoveredPacket(const uint8_t* rtp_packet, const size_t rtp_packet_length) {
+    
+    ELOG_DEBUG("OnRecoveredPacket");
+    
     videoQueue_.pushPacket((const char*)rtp_packet, rtp_packet_length);
     return true;
 }
 
-int32_t ExternalOutput::OnReceivedPayloadData(const uint8_t* payload_data, const uint16_t payload_size, const webrtc::WebRtcRTPHeader* rtp_header) {
+int32_t ExternalOutput::OnReceivedPayloadData(const uint8_t* payload_data, const size_t payload_size, const webrtc::WebRtcRTPHeader* rtp_header) {
+    
+    ELOG_DEBUG("OnReceivedPayloadData");
+    
     // Unused by WebRTC's FEC implementation; just something we have to implement.
     return 0;
 }

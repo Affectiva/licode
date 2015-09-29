@@ -244,12 +244,15 @@ namespace erizo {
 
 
   // This is called by our fec_ object when it recovers a packet.
-  bool WebRtcConnection::OnRecoveredPacket(const uint8_t* rtp_packet, int rtp_packet_length) {
+  bool WebRtcConnection::OnRecoveredPacket(const uint8_t* rtp_packet, const size_t rtp_packet_length) {
+      
+      // was int
+      // new is const size_t
       this->queueData(0, (const char*) rtp_packet, rtp_packet_length, videoTransport_, VIDEO_PACKET);
       return true;
   }
 
-  int32_t WebRtcConnection::OnReceivedPayloadData(const uint8_t* /*payload_data*/, const uint16_t /*payload_size*/, const webrtc::WebRtcRTPHeader* /*rtp_header*/) {
+  int32_t WebRtcConnection::OnReceivedPayloadData(const uint8_t* /*payload_data*/, const size_t /*payload_size*/, const webrtc::WebRtcRTPHeader* /*rtp_header*/) {
       // Unused by WebRTC's FEC implementation; just something we have to implement.
       return 0;
   }
@@ -558,7 +561,7 @@ namespace erizo {
   }
 
 
-  void WebRtcConnection::queueData(int comp, const char* buf, int length, Transport *transport, packetType type) {
+  void WebRtcConnection::queueData(int comp, const char* buf, const size_t length, Transport *transport, packetType type) {
     if ((audioSink_ == NULL && videoSink_ == NULL && fbSink_==NULL) || !sending_) //we don't enqueue data if there is nothing to receive it
       return;
     boost::mutex::scoped_lock lock(receiveVideoMutex_);
@@ -580,7 +583,8 @@ namespace erizo {
       p_.comp = comp;
 //      p_.type = (transport->mediaType == VIDEO_TYPE) ? VIDEO_PACKET : AUDIO_PACKET;
       p_.type = type;
-      p_.length = length;
+      // TODO: modify dataPacket to use size_t
+      p_.length = static_cast<int>(length);
       changeDeliverPayloadType(&p_, type);
       sendQueue_.push(p_);
     }else{

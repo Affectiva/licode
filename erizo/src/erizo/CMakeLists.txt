@@ -15,7 +15,7 @@ set(ERIZO_VERSION_MAJOR 0)
 set(ERIZO_VERSION_MINOR 1)
 set(CMAKE_CXX_FLAGS "-g -Wall -std=c++0x")
 
-include_directories("${ERIZO_SOURCE_DIR}" "${THIRD_PARTY_INCLUDE}")
+include_directories("${ERIZO_SOURCE_DIR}" "${ERIZO_SOURCE_DIR}/rtp" "${THIRD_PARTY_INCLUDE}")
 
 file(GLOB_RECURSE ERIZO_SOURCES "${ERIZO_SOURCE_DIR}/*.h" "${ERIZO_SOURCE_DIR}/*.c" "${ERIZO_SOURCE_DIR}/*.cpp" "${ERIZO_SOURCE_DIR}/*.cc")
 

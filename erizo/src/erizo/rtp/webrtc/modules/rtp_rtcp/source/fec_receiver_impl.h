@@ -13,45 +13,32 @@
 
 // This header is included to get the nested declaration of Packet structure.
 
-//#include "webrtc/modules/rtp_rtcp/interface/fec_receiver.h"
-//#include "webrtc/modules/rtp_rtcp/interface/rtp_rtcp_defines.h"
-#include "forward_error_correction.h"
-#include "rtp_utility.h"
-#include "boost/thread.hpp"
-//#include "webrtc/typedefs.h"
+#include "webrtc/base/scoped_ptr.h"
+#include "webrtc/modules/rtp_rtcp/interface/fec_receiver.h"
+#include "webrtc/modules/rtp_rtcp/interface/rtp_rtcp_defines.h"
+#include "webrtc/modules/rtp_rtcp/source/forward_error_correction.h"
+#include "webrtc/typedefs.h"
 
 namespace webrtc {
 
-class RtpData
-{
-public:
-    virtual ~RtpData() {}
-
-    virtual int32_t OnReceivedPayloadData(
-        const uint8_t* payloadData,
-        const uint16_t payloadSize,
-        const WebRtcRTPHeader* rtpHeader) = 0;
-
-    virtual bool OnRecoveredPacket(const uint8_t* packet,
-                                   int packet_length) = 0;
-};
-
 class CriticalSectionWrapper;
 
-class FecReceiverImpl {
+class FecReceiverImpl : public FecReceiver {
  public:
   FecReceiverImpl(RtpData* callback);
   virtual ~FecReceiverImpl();
 
   int32_t AddReceivedRedPacket(const RTPHeader& rtp_header,
-                                       const uint8_t* incoming_rtp_packet,
-                                       int packet_length,
-                                       uint8_t ulpfec_payload_type);
+                               const uint8_t* incoming_rtp_packet,
+                               size_t packet_length,
+                               uint8_t ulpfec_payload_type) override;
 
-  int32_t ProcessReceivedFec();
+  int32_t ProcessReceivedFec() override;
+
+  FecPacketCounter GetPacketCounter() const override;
 
  private:
-  boost::mutex crit_sect_;
+  rtc::scoped_ptr<CriticalSectionWrapper> crit_sect_;
   RtpData* recovered_packet_callback_;
   ForwardErrorCorrection* fec_;
   // TODO(holmer): In the current version received_packet_list_ is never more
@@ -59,7 +46,9 @@ class FecReceiverImpl {
   // arrives. We should remove the list.
   ForwardErrorCorrection::ReceivedPacketList received_packet_list_;
   ForwardErrorCorrection::RecoveredPacketList recovered_packet_list_;
+  FecPacketCounter packet_counter_;
 };
 }  // namespace webrtc
 
 #endif  // WEBRTC_MODULES_RTP_RTCP_SOURCE_FEC_RECEIVER_IMPL_H_
+
