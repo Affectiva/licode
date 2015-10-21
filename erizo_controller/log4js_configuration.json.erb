@@ -1,0 +1,18 @@
+{
+  "appenders": [
+    { 
+      "type": "console",
+      "layout": {
+        "type": "pattern",
+        "pattern": "%d  - %p: %c - %m",
+        "replaceConsole": true
+      } 
+    }
+  ],
+  "levels": {
+  	"ErizoController": "<%= node['licode']['loglevel_controller'] %>",
+  	"AMQPER": "<%= node['licode']['loglevel_amqper'] %>",
+    "ErizoJS": "<%= node['licode']['loglevel_js'] %>", 
+    "ErizoJSController": "<%= node['licode']['loglevel_js_controller'] %>"
+  }
+}

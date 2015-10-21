@@ -95,6 +95,14 @@ var ecch = require('./ecch').Ecch({amqper: amqper});
 // Logger
 var log = logger.getLogger("ErizoController");
 
+// Set up a static server to serve erizo.js, etc, from the dist
+// directory
+var finalhandler = require('finalhandler')
+var serve = require('serve-static')('../erizoClient/dist')
+var dist = function(req, res) {
+  serve(req, res, finalhandler(req, res))
+}
+
 var server;
 
 if (GLOBAL.config.erizoController.listen_ssl) {
@@ -104,10 +112,10 @@ if (GLOBAL.config.erizoController.listen_ssl) {
         key: fs.readFileSync('../../cert/key.pem').toString(),
         cert: fs.readFileSync('../../cert/cert.pem').toString()
     };
-    server = https.createServer(options);
+    server = https.createServer(options, dist);
 } else {
     var http = require('http');
-    server = http.createServer();
+    server = http.createServer(dist);
 }
 
 server.listen(GLOBAL.config.erizoController.listen_port);
@@ -141,6 +149,20 @@ var sendMsgToRoom = function (room, type, arg) {
         }
     }
 };
+
+/*
+ * DRY support for getting the recording url from the recordingId
+ */
+var buildRecordingUrl = function (recordingId) {
+    var url, fileExtension = '.mkv';
+
+    if (GLOBAL.config.erizoController.recording_path) {
+        url = GLOBAL.config.erizoController.recording_path + recordingId + fileExtension;
+    } else {
+        url = '/tmp/' + recordingId + fileExtension;
+    }
+    return url;
+}
 
 var privateRegexp;
 var publicIP;
@@ -320,11 +342,7 @@ var listen = function () {
                 var url = sdp;
                 if (options.state === 'recording') {
                     var recordingId = sdp;
-                    if (GLOBAL.config.erizoController.recording_path) {
-                        url = GLOBAL.config.erizoController.recording_path + recordingId + '.mkv';
-                    } else {
-                        url = '/tmp/' + recordingId + '.mkv';
-                    }
+                    url = buildRecordingUrl(recordingId);
                 }
                 socket.room.controller.addExternalInput(id, url, function (result) {
                     if (result === 'success') {
@@ -447,13 +465,7 @@ var listen = function () {
         socket.on('startRecorder', function (options, callback) {
             var streamId = options.to;
             var recordingId = socket.room.id;
-            var url;
-
-            if (GLOBAL.config.erizoController.recording_path) {
-                url = GLOBAL.config.erizoController.recording_path + recordingId + '.mkv';
-            } else {
-                url = '/tmp/' + recordingId + '.mkv';
-            }
+            var url = buildRecordingUrl(recordingId);
 
             log.info("erizoController.js: Starting recorder streamID " + streamId + "url ", url);
 
@@ -477,24 +489,10 @@ var listen = function () {
         socket.on('stopRecorder', function (options, callback) {
             var recordingId = socket.room.id;
 
-            var url;
-
-            if (GLOBAL.config.erizoController.recording_path) {
-                url = GLOBAL.config.erizoController.recording_path + recordingId + '.mkv';
-            } else {
-                url = '/tmp/' + recordingId + '.mkv';
-            }
+            var url = buildRecordingUrl(recordingId);
 
             log.info("erizoController.js: Stopping recording  " + recordingId + " url " + url);
             socket.room.controller.removeExternalOutput(url, callback);
-
-	    var sessionToken = recordingId;
-            log.info("erizoController.js: affdex.saveVideo " + recordingId);
-
-            affdex.saveVideo(sessionToken, url, function(err, data) {
-		log.info('saveVideo callback');
-		log.info(data);
-	    });
 
         });
 
@@ -586,11 +584,24 @@ var listen = function () {
                         if( socket.room.streams[id]) {
                             if (socket.room.streams[id].hasAudio() || socket.room.streams[id].hasVideo() || socket.room.streams[id].hasScreen()) {
                                 if (!socket.room.p2p) {
-                                    socket.room.controller.removePublisher(id);
-                                    if (GLOBAL.config.erizoController.report.session_events) {
-                                        var timeStamp = new Date();
-                                        amqper.broadcast('event', {room: socket.room.id, user: socket.id, type: 'unpublish', stream: id, timestamp: timeStamp.getTime()});
-                                    }
+
+                                    var recordingId = socket.room.id;
+                                    var url = buildRecordingUrl(recordingId);
+
+                                    log.info("erizoController.js: affdex.saveVideo " + url);
+
+                                    affdex.saveVideo(recordingId, url, function(err, data) {
+
+                                        log.info('saveVideo callback');
+                                        log.info(data);
+
+                                        socket.room.controller.removePublisher(id);
+                                        if (GLOBAL.config.erizoController.report.session_events) {
+                                            var timeStamp = new Date();
+                                            amqper.broadcast('event', {room: socket.room.id, user: socket.id, type: 'unpublish', stream: id, timestamp: timeStamp.getTime()});
+                                        }
+                                    });
+
                                 }
                             }
 
