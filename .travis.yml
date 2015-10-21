@@ -1,0 +1,19 @@
+language: node_js
+sudo: true
+services:
+  - rabbitmq
+node_js:
+  - 0.10
+env:
+  - ENABLE_GPL = true
+  - ENABLE_GPL = false
+before_install:
+  - ./scripts/installTravisDeps.sh # install srtp, libav, openssl, libnice
+  - export CHROME_BIN=chromium-browser # set the preinstalled chromium
+  - export DISPLAY=:99.0
+  - sh -e /etc/init.d/xvfb start # starting the xvfb server for headless testing
+script:
+  - ./scripts/installErizo.sh
+  - cp licode_config.js.test licode_config.js
+  - ./scripts/initLicode.sh
+  - npm test

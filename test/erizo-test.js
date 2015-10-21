@@ -1,169 +1,120 @@
-/*global describe, beforeEach, it, XMLHttpRequest, jasmine, expect, waitsFor, runs, Erizo*/
+'use strict';
+
 describe('server', function () {
-    "use strict";
-    var room, createToken, token, localStream, remoteStream;
+    var room;
 
-    var TIMEOUT=10000,
-        ROOM_NAME="myTestRoom",
-        id;
+    // room states
+    var DISCONNECTED = 0,
+    CONNECTING = 1,
+    CONNECTED = 2;
 
-    createToken = function (userName, role, callback, callbackError) {
-        N.API.init(config.nuve.superserviceID, config.nuve.superserviceKey, 'http://localhost:3000/');
-        N.API.createRoom(ROOM_NAME, function(room) {
-            id = room._id;
-            N.API.createToken(id, "user", "role", callback, callbackError);
-        });
-    };
+    var videoStreamConfig = {audio: false, video: false, data: false, videoSize: [640, 480, 640, 480]};
 
-    beforeEach(function () {
-        L.Logger.setLogLevel(L.Logger.NONE);
+    beforeAll(function() {
+        // modify jasmine timeout to be 30 seconds
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 30000;
     });
 
-    it('should get token', function () {
-        var callback = jasmine.createSpy("token");
-        var received = false;
-        var obtained = false;
+    it('should connect to room', function(done) {
 
-        createToken("user", "presenter", function(_token) {
-            callback();
-            token = _token;
-            obtained = true;
-            received = true;
-        }, function(error) {
-            obtained = false;
-            received = true;
+        var room_token = JSON.stringify({
+            "id": "mock-session-token",
+            "host": config.erizoController.publicIP + ':' + config.erizoController.port,
+            "secure": false
         });
 
-        waitsFor(function () {
-            return received;
-        }, "The token shoud have been creaded", TIMEOUT);
+        room = Erizo.Room({token: room_token});
+        expect(room.state).toBe(DISCONNECTED);
 
-        runs(function () {
-            expect(obtained).toBe(true);
+        room.addEventListener("room-connected", function(roomEvent) {
+            expect(room.state).toBe(CONNECTED);
+            done();
         });
-    });
-
-    it('should get access to user media', function () {
-        var callback = jasmine.createSpy("getusermedia");
-
-        localStream = Erizo.Stream({audio: true, video: true, fake: true, data: true});
-
-        localStream.addEventListener("access-accepted", callback);
-
-        localStream.init();
-
-        waitsFor(function () {
-            return callback.callCount > 0;
-        }, "User media should have been accepted", TIMEOUT);
-
-        runs(function () {
-
-            expect(callback).toHaveBeenCalled();
-        });
-    });
-
-    it('should connect to room', function () {
-        var callback = jasmine.createSpy("connectroom");
-
-        room = Erizo.Room({token: token});
-
-        room.addEventListener("room-connected", callback);
 
         room.connect();
-
-        waitsFor(function () {
-            return callback.callCount > 0;
-        }, "Client should be connected to room", TIMEOUT);
-
-        runs(function () {
-            expect(callback).toHaveBeenCalled();
-        });
+        expect(room.state).toBe(CONNECTING);
     });
 
-    it('should publish stream in room', function () {
-        var callback = jasmine.createSpy("publishroom");
+    it('should disconnect from room', function(done) {
 
-        room.addEventListener("stream-added", function(event) {
-            if (localStream.getID() === event.stream.getID()) {
-                callback();
-            }
+        expect(room.state).toBe(CONNECTED);
+
+        room.addEventListener("room-disconnected", function(roomEvent) {
+            expect(room.state).toBe(DISCONNECTED);
+            done();
         });
-        room.publish(localStream);
-        waitsFor(function () {
-            return callback.callCount > 0;
-        }, "Stream should be published in room", TIMEOUT);
-
-        runs(function () {
-            expect(callback).toHaveBeenCalled();
-        });
-    });
-
-    it('should subscribe to stream in room', function () {
-        var callback = jasmine.createSpy("publishroom");
-
-        room.addEventListener("stream-subscribed", function() {
-            callback();
-        });
-
-        var remoteStream = room.remoteStreams;
-        
-        for (var index in remoteStream) {
-            var stream = remoteStream[index];
-            room.subscribe(stream);
-        }
-        waitsFor(function () {
-            return callback.callCount > 0;
-        }, "Stream should be subscribed to stream", 20000);
-
-        runs(function () {
-            expect(callback).toHaveBeenCalled();
-        });
-    });
-
-    it('should allow showing a subscribed stream', function () {
-        var divg = document.createElement("div");
-        divg.setAttribute("id", "myDiv");
-        document.body.appendChild(divg);
-
-        localStream.show('myDiv');
-
-        waits(500);
-
-        runs(function () {
-            var video = document.getElementById('stream' + localStream.getID());
-            expect(video.getAttribute("url")).toBeDefined();
-        });
-    });
-
-    it('should disconnect from room', function () {
-        var callback = jasmine.createSpy("connectroom");
-
-        room.addEventListener("room-disconnected", callback);
 
         room.disconnect();
-
-        waitsFor(function () {
-            return callback.callCount > 0;
-        }, "Client should be disconnected from room", TIMEOUT);
-
-        runs(function () {
-            expect(callback).toHaveBeenCalled();
-        });
     });
 
-    it ('should delete room', function() {
-        N.API.deleteRoom(id, function(result) {
-            id = undefined;
-        }, function(error) {
+    it('should connect and record', function(done) {
 
+        var room_token = JSON.stringify({
+            "id": "mock-session-token",
+            "host": config.erizoController.publicIP + ':' + config.erizoController.port,
+            "secure": false
         });
 
-        waitsFor(function () {
-            return id === undefined;
-        }, "Nuve should have created the room", TIMEOUT);
+        videoStreamConfig.video = true;
+        var localStream = Erizo.Stream(videoStreamConfig);
 
-        runs(function () {
-            expect(id).toBe(undefined);
+        localStream.addEventListener("access-accepted", function () {
+            expect(localStream.stream).toBeDefined();
+            // connect will fire room-connected on success
+            room.connect();
         });
-    })
+
+        room = Erizo.Room({token: room_token});
+
+        room.addEventListener("room-connected", function(roomEvent) {
+            expect(room.state).toBe(CONNECTED);
+            // publish will fire the stream-added event on success
+            room.publish(localStream, {maxVideoBW: 3000});
+        });
+
+        room.addEventListener("stream-added", function (streamEvent) {
+            room.startRecording(localStream, function(id) {
+
+                // use setTimeout to wait 20 seconds, then stop recording
+                setTimeout(function() {
+                    room.stopRecording(function(success, error) {
+                        done();
+                    });
+                }, 20000);
+            });
+        });
+
+        // init will fire access-accepted on success
+        localStream.init();
+
+    });
+
+    it('should accept access to local stream with video', function(done) {
+
+        videoStreamConfig.video = true;
+        var localStream = Erizo.Stream(videoStreamConfig);
+
+        localStream.addEventListener("access-accepted", function () {
+            expect(localStream.stream).toBeDefined();
+
+            done();
+        });
+
+        localStream.init();
+    });
+
+    it('should deny access to when trying to stream with screen', function(done) {
+
+        videoStreamConfig.screen = true;
+        var localStream = Erizo.Stream(videoStreamConfig);
+
+        localStream.addEventListener("access-denied", function () {
+            expect(localStream.stream).toBeUndefined();
+
+            done();
+        });
+
+        localStream.init();
+    });
+
 });

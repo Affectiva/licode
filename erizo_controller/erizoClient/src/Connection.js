@@ -12,10 +12,7 @@ Erizo.Connection = function (spec) {
 
     // Check which WebRTC Stack is installed.
     that.browser = Erizo.getBrowser();
-    if (typeof module !== 'undefined' && module.exports) {
-        L.Logger.error('Publish/subscribe video/audio streams not supported in erizofc yet');
-        that = Erizo.FcStack(spec);
-    } else if (that.browser === 'mozilla') {
+    if (that.browser === 'mozilla') {
         L.Logger.debug("Firefox Stack");
         that = Erizo.FirefoxStack(spec);
     } else if (that.browser === 'bowser'){
@@ -126,11 +123,7 @@ Erizo.GetUserMedia = function (config, callback, error) {
                 L.Logger.debug("This browser does not support screenSharing");
         }
     } else {
-      if (typeof module !== 'undefined' && module.exports) {
-        L.Logger.error('Video/audio streams not supported in erizofc yet');
-      } else {
-        navigator.getMedia(config, callback, error);
-      }
+      navigator.getMedia(config, callback, error);
     }
 };
 

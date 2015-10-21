@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+
 runcmake() {
    cmake ../src
    echo "Done"
