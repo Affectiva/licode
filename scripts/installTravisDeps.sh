@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+
 SCRIPT=`pwd`/$0
 FILENAME=`basename $SCRIPT`
 PATHNAME=`dirname $SCRIPT`
@@ -18,13 +20,6 @@ parse_arguments(){
     esac
     shift
   done
-}
-
-install_apt_deps(){
-  sudo apt-get update --fix-missing
-  sudo apt-get install -qq make gcc libssl-dev cmake libsrtp0-dev libsrtp0 libnice10 libnice-dev libglib2.0-dev pkg-config libboost-regex-dev libboost-thread-dev libboost-system-dev liblog4cxx10-dev curl
-  npm install -g node-gyp
-  sudo chown -R `whoami` ~/.npm ~/tmp/
 }
 
 install_openssl(){
@@ -60,7 +55,6 @@ install_libnice(){
 }
 
 install_mediadeps(){
-  sudo apt-get install -qq yasm libvpx. libx264.
   if [ -d $LIB_DIR ]; then
     cd $LIB_DIR
     curl -O https://www.libav.org/releases/libav-11.1.tar.gz
@@ -78,7 +72,6 @@ install_mediadeps(){
 }
 
 install_mediadeps_nogpl(){
-  sudo apt-get install -qq yasm libvpx.
   if [ -d $LIB_DIR ]; then
     cd $LIB_DIR
     curl -O https://www.libav.org/releases/libav-11.1.tar.gz
@@ -95,10 +88,11 @@ install_mediadeps_nogpl(){
 }
 
 install_libsrtp(){
-  cd $ROOT/third_party/srtp
+  curl -O -L https://github.com/cisco/libsrtp/archive/v1.5.2.tar.gz
+  tar -zxvf v1.5.2.tar.gz > /dev/null 2> /dev/null
+  cd libsrtp-1.5.2
   CFLAGS="-fPIC" ./configure --prefix=$PREFIX_DIR
   make -s V=0
-  make uninstall
   make install
   cd $CURRENT_DIR
 }
@@ -107,16 +101,13 @@ parse_arguments $*
 
 mkdir -p $PREFIX_DIR
 
-echo "Installing deps via apt-get... [press Enter]"
-install_apt_deps
-
-echo "Installing openssl library...  [press Enter]"
+echo "Installing openssl library..."
 install_openssl
 
-echo "Installing libnice library...  [press Enter]"
+echo "Installing libnice library..."
 install_libnice
 
-echo "Installing libsrtp library...  [press Enter]"
+echo "Installing libsrtp library..."
 install_libsrtp
 
 if [ "$ENABLE_GPL" = "true" ]; then

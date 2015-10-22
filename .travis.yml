@@ -1,19 +1,49 @@
-language: node_js
-sudo: true
+sudo: false
+language: cpp
+compiler:
+  - gcc
 services:
   - rabbitmq
+addons:
+  apt:
+    sources:
+    # holds gcc 4.9
+    - ubuntu-toolchain-r-test
+    # holds cmake 3.2.3
+    - george-edison55-precise-backports
+    # holds boost 1.55
+    - boost-latest
+    packages:
+    - gcc-4.9
+    - g++-4.9
+    - make
+    - cmake
+    - cmake-data
+    - libboost-regex1.55-dev
+    - libboost-thread1.55-dev
+    - libboost-system1.55-dev
+    - libglib2.0-dev
+    - liblog4cxx10-dev
+    - libvpx-dev
+    - libx264-dev
+    - pkg-config
+    - yasm
 node_js:
   - 0.10
 env:
   - ENABLE_GPL = true
   - ENABLE_GPL = false
 before_install:
-  - ./scripts/installTravisDeps.sh # install srtp, libav, openssl, libnice
+  - export CXX="g++-4.9" CC="gcc-4.9"
   - export CHROME_BIN=chromium-browser # set the preinstalled chromium
   - export DISPLAY=:99.0
   - sh -e /etc/init.d/xvfb start # starting the xvfb server for headless testing
-script:
+install:
+  - ./scripts/installTravisDeps.sh # install srtp, libav, openssl, libnice
+  - npm install -g node-gyp
   - ./scripts/installErizo.sh
+script:
   - cp licode_config.js.test licode_config.js
   - ./scripts/initLicode.sh
+  - npm install
   - npm test

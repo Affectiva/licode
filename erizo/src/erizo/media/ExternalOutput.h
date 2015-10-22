@@ -3,7 +3,8 @@
 
 #include "../MediaDefinitions.h"
 #include "rtp/RtpPacketQueue.h"
-#include "rtp/webrtc/fec_receiver_impl.h"
+#include "webrtc/modules/rtp_rtcp/source/fec_receiver_impl.h"
+
 #include "MediaProcessor.h"
 #include "boost/thread.hpp"
 #include "logger.h"
@@ -33,9 +34,9 @@ public:
     void receiveRawData(RawDataPacket& packet);
 
     // webrtc::RtpData callbacks.  This is for Forward Error Correction (per rfc5109) handling.
-    virtual bool OnRecoveredPacket(const uint8_t* packet, int packet_length);
+    virtual bool OnRecoveredPacket(const uint8_t* packet, const size_t packet_length);
     virtual int32_t OnReceivedPayloadData( const uint8_t* payload_data,
-                                           const uint16_t payload_size,
+                                           const size_t payload_size,
                                            const webrtc::WebRtcRTPHeader* rtp_header);
 
 private:

@@ -11,7 +11,8 @@
 #include "MediaDefinitions.h"
 #include "Transport.h"
 #include "Stats.h"
-#include "rtp/webrtc/fec_receiver_impl.h"
+#include "webrtc/modules/rtp_rtcp/source/fec_receiver_impl.h"
+
 #include "rtp/RtcpProcessor.h"
 
 namespace erizo {
@@ -132,7 +133,7 @@ public:
 
     void updateState(TransportState state, Transport * transport);
 
-    void queueData(int comp, const char* data, int len, Transport *transport, packetType type);
+    void queueData(int comp, const char* data, const size_t len, Transport *transport, packetType type);
 
     void onCandidate(const CandidateInfo& cand, Transport *transport);
 
@@ -145,8 +146,8 @@ public:
 
 
     // webrtc::RtpHeader overrides.
-    int32_t OnReceivedPayloadData(const uint8_t* payloadData, const uint16_t payloadSize,const webrtc::WebRtcRTPHeader* rtpHeader);
-    bool OnRecoveredPacket(const uint8_t* packet, int packet_length);
+    int32_t OnReceivedPayloadData(const uint8_t* payloadData, const size_t payloadSize,const webrtc::WebRtcRTPHeader* rtpHeader);
+    bool OnRecoveredPacket(const uint8_t* packet, const size_t packet_length);
 
 private:
   static const int STATS_INTERVAL = 5000;
