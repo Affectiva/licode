@@ -448,30 +448,19 @@ namespace erizo {
     }
 
 
-    timeval time;
-    gettimeofday(&time, NULL);
-    long millis = (time.tv_sec * 1000) + (time.tv_usec / 1000);
-
     RtpHeader head;
     head.setSeqNumber(audioSeqnum_++);
-//    head.setTimestamp(millis*8);
     head.setMarker(1);
     if (pts==0){
-//      head.setTimestamp(audioSeqnum_*160);
       head.setTimestamp(av_rescale(audioSeqnum_, (mediaInfo.audioCodec.sampleRate/1000), 1));
     }else{
-//      head.setTimestamp(pts*8);
       head.setTimestamp(av_rescale(pts, mediaInfo.audioCodec.sampleRate,1000));
     }
     head.setSSRC(44444);
     head.setPayloadType(mediaInfo.rtpAudioInfo.PT);
 
-//    memcpy (rtpAudioBuffer_, &head, head.getHeaderLength());
-//    memcpy(&rtpAudioBuffer_[head.getHeaderLength()], inBuff, inBuffLen);
     memcpy (outBuff, &head, head.getHeaderLength());
     memcpy(&outBuff[head.getHeaderLength()], inBuff, inBuffLen);
-    //			sink_->sendData(rtpBuffer_, l);
-    //	rtpReceiver_->receiveRtpData(rtpBuffer_, (inBuffLen + RTP_HEADER_LEN));
     return (inBuffLen+head.getHeaderLength());
   }
 
