@@ -129,12 +129,12 @@ bool SrtpChannel::configureSrtpSession(srtp_t *session, const char* key,
 
     gsize len = 0;
     uint8_t *akey = (uint8_t*) g_base64_decode((gchar*) key, &len);
-    ELOG_DEBUG("set master key/salt to %s/", octet_string_hex_string(akey, 16));
+
     // allocate and initialize the SRTP session
     policy.key = akey;
     int res = srtp_create(session, &policy);
-    if (res!=0){
-      ELOG_ERROR("Failed to create srtp session with %s, %d", octet_string_hex_string(akey, 16), res);
+    if (res != 0) {
+      ELOG_ERROR("Failed to create srtp session");
     }
     g_free(akey); akey = NULL;
     return res!=0? false:true;
