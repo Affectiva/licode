@@ -583,8 +583,7 @@ namespace erizo {
       p_.comp = comp;
 //      p_.type = (transport->mediaType == VIDEO_TYPE) ? VIDEO_PACKET : AUDIO_PACKET;
       p_.type = type;
-      // TODO: modify dataPacket to use size_t
-      p_.length = static_cast<int>(length);
+      p_.length = length;
       changeDeliverPayloadType(&p_, type);
       sendQueue_.push(p_);
     }else{
