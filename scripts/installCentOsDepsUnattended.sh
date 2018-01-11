@@ -47,7 +47,7 @@ install_apt_deps(){
   # the packages that we need
   sudo yum -y install epel-release
   # now that yum knows about epel it can install the rest of the packages
-  sudo yum -y install patch git make gcc bzip2-devel x264-devel libav-devel libnice-devel libsrtp-devel libvpx-devel opus-devel cmake pkgconfig glib2-devel boost-devel boost-regex boost-thread boost-system log4cxx-devel rabbitmq-server curl boost-test tar xz libffi-devel yasm java-1.7.0-openjdk
+  sudo yum -y install patch git make gcc bzip2-devel x264-devel libnice-devel libsrtp-devel libvpx-devel opus-devel cmake pkgconfig glib2-devel boost-devel boost-regex boost-thread boost-system log4cxx-devel rabbitmq-server curl boost-test tar xz libffi-devel yasm java-1.7.0-openjdk
 }
 
 install_node(){
@@ -93,6 +93,17 @@ install_openssl(){
   fi
 }
 
+
+install_mediadeps(){
+  cd $LIB_DIR
+  curl -O https://www.libav.org/releases/libav-11.1.tar.gz
+  tar -xf libav-11.1.tar.gz
+  cd libav-11.1
+  PKG_CONFIG_PATH=${PREFIX_DIR}/lib/pkgconfig CPATH=${PREFIX_DIR}/include ./configure --prefix=$PREFIX_DIR --enable-shared --enable-gpl --enable-libvpx --enable-libx264 --enable-libopus
+  make -s V=0
+  make install
+}
+
 parse_arguments $*
 
 mkdir -p $PREFIX_DIR
@@ -100,5 +111,6 @@ mkdir -p $PREFIX_DIR
 install_apt_deps
 install_node
 install_openssl
+install_mediadeps
 
 check_proxy
